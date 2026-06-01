@@ -24,7 +24,7 @@ CONFIG_PATH = APP_DIR / "config.json"
 WHITELIST_PATH = APP_DIR / "recipients.json"
 DEFAULT_CONFIG = {
     "api_key_env": "RESEND_API_KEY",
-    "from": "Evy <evy.@evysnook.com>",
+    "from": "Evy <evy@evysnook.com>",
     "resend_endpoint": "https://api.resend.com/emails",
 }
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")

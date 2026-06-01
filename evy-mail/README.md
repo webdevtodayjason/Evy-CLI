@@ -77,7 +77,7 @@ Initialize local config:
 
 ```bash
 evy-mail init \
-  --from "Evy <evy.@evysnook.com>" \
+  --from "Evy <evy@evysnook.com>" \
   --api-key-env RESEND_API_KEY
 ```
 
@@ -242,7 +242,7 @@ evy-mail send --to person@example.com --subject "Hello" --text "Hello from Evy"
 - Never commit `RESEND_API_KEY`, `.env`, or generated local config containing private recipient metadata unless the human asks.
 - This CLI enforces whitelist checks for `to`, `cc`, and `bcc`.
 - Resend may reject a sender if the domain is not verified or if the email local part is not accepted.
-- Jason requested `Evy <evy.@evysnook.com>` as the default sender. If Resend rejects it, ask before changing it.
+- Jason requested `Evy <evy@evysnook.com>` as the default sender. If Resend rejects it, ask before changing it.
 - Sending is a real external side effect. Dry-run first unless the task is routine and the recipient is already approved.
 
 ## Files
