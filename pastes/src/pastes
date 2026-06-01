@@ -1,0 +1,153 @@
+#!/usr/bin/env python3
+"""Tiny Pastes.io CLI for agents.
+
+Env: PASTES_IO_API_KEY (for create/list/delete)
+"""
+import argparse
+import json
+import os
+import sys
+import subprocess
+import urllib.parse
+from pathlib import Path
+
+BASE = os.environ.get("PASTES_IO_BASE", "https://pastes.io").rstrip("/")
+
+
+def load_dotenv():
+    env = Path.home() / ".hermes" / ".env"
+    if not env.exists():
+        return
+    for line in env.read_text(errors="ignore").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        k, v = line.split("=", 1)
+        k = k.strip()
+        if k and k not in os.environ:
+            os.environ[k] = v.strip().strip('"').strip("'")
+
+
+def api_key(required=False):
+    key = os.environ.get("PASTES_IO_API_KEY")
+    if required and not key:
+        sys.exit("PASTES_IO_API_KEY is required; set it in ~/.hermes/.env or the environment")
+    return key
+
+
+def request(method, path, *, body=None, headers=None, raw=False):
+    """HTTP request via curl.
+
+    Pastes.io sits behind Cloudflare and blocked Python urllib with 1010
+    browser_signature_banned during smoke testing. curl succeeds reliably.
+    """
+    url = path if path.startswith("http") else BASE + path
+    cmd = ["curl", "-sS", "-X", method, url]
+    for k, v in dict(headers or {}).items():
+        cmd += ["-H", f"{k}: {v}"]
+    if body is not None:
+        cmd += ["-H", "Content-Type: application/json", "-H", "Accept: application/json", "--data", json.dumps(body)]
+    proc = subprocess.run(cmd, text=True, capture_output=True, timeout=60)
+    if proc.returncode != 0:
+        return {"error": proc.stderr.strip() or "curl failed", "exit_code": proc.returncode}
+    text = proc.stdout
+    if raw:
+        return text
+    try:
+        return json.loads(text)
+    except Exception:
+        return {"raw": text}
+
+
+def print_out(obj, as_json=True):
+    if as_json:
+        print(json.dumps(obj, indent=2, ensure_ascii=False))
+    elif isinstance(obj, str):
+        print(obj)
+    else:
+        print(json.dumps(obj, ensure_ascii=False))
+
+
+def cmd_create(args):
+    content = args.content
+    if args.file:
+        content = Path(args.file).read_text()
+    if content is None:
+        content = sys.stdin.read()
+    if not content:
+        sys.exit("content is required via --content, --file, or stdin")
+    body = {"content": content, "title": args.title}
+    for k in ("syntax", "expire", "password"):
+        v = getattr(args, k)
+        if v:
+            body[k] = v
+    res = request("POST", "/api/paste", body=body, headers={"Authorization": f"Bearer {api_key(True)}"})
+    print_out(res)
+
+
+def cmd_get(args):
+    if args.password:
+        res = request("POST", f"/api/pastes/{urllib.parse.quote(args.slug)}", body={"password": args.password})
+    else:
+        res = request("GET", f"/api/pastes/{urllib.parse.quote(args.slug)}")
+    print_out(res)
+
+
+def cmd_raw(args):
+    headers = {}
+    if args.password:
+        headers["x-password"] = args.password
+    text = request("GET", f"/raw/{urllib.parse.quote(args.slug)}", headers=headers, raw=True)
+    print(text, end="" if text.endswith("\n") else "\n")
+
+
+def cmd_list(args):
+    q = ""
+    if args.query:
+        q = "?" + urllib.parse.urlencode({"q": args.query})
+    res = request("GET", f"/api/pastes{q}", headers={"Accept": "application/json", "Authorization": f"Bearer {api_key(True)}"})
+    print_out(res)
+
+
+def cmd_delete(args):
+    res = request("DELETE", f"/api/pastes/{urllib.parse.quote(args.slug)}", headers={"Authorization": f"Bearer {api_key(True)}"})
+    print_out(res)
+
+
+def main():
+    load_dotenv()
+    p = argparse.ArgumentParser(prog="pastes", description="Pastes.io CLI: create, read, list, delete pastes")
+    sub = p.add_subparsers(dest="cmd", required=True)
+
+    c = sub.add_parser("create", help="create a paste")
+    c.add_argument("--title", required=True)
+    c.add_argument("--content")
+    c.add_argument("--file")
+    c.add_argument("--syntax", default="txt")
+    c.add_argument("--expire", default="1M", help="N, 1M, 1Y, 1W, 2W, 1D, 1H, 10M, SD")
+    c.add_argument("--password")
+    c.set_defaults(func=cmd_create)
+
+    g = sub.add_parser("get", help="get paste metadata and content as JSON")
+    g.add_argument("slug")
+    g.add_argument("--password")
+    g.set_defaults(func=cmd_get)
+
+    r = sub.add_parser("raw", help="print raw paste content")
+    r.add_argument("slug")
+    r.add_argument("--password")
+    r.set_defaults(func=cmd_raw)
+
+    l = sub.add_parser("list", help="list your pastes")
+    l.add_argument("--query", "-q")
+    l.set_defaults(func=cmd_list)
+
+    d = sub.add_parser("delete", help="delete one of your pastes")
+    d.add_argument("slug")
+    d.set_defaults(func=cmd_delete)
+
+    args = p.parse_args()
+    args.func(args)
+
+if __name__ == "__main__":
+    main()
