@@ -9,6 +9,7 @@ Each tool lives in its own subfolder as a small, copyable project with an AI-age
 | Tool | Purpose | Path |
 | --- | --- | --- |
 | Pastes.io CLI | Create, read, list, and delete Pastes.io pastebin entries from the terminal. | `pastes/` |
+| Evy Mail CLI | Send email through Resend with a mandatory approved-recipient whitelist. | `evy-mail/` |
 
 ## Repository convention
 
