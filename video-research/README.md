@@ -10,7 +10,7 @@ Give this README to your AI agent. It explains how to install and use this CLI.
 - optionally fall back to downloading audio and transcribing locally with `faster-whisper`;
 - write a timestamped transcript;
 - write metadata JSON;
-- write a first-pass research brief focused on agent systems, hardware/software co-design, local agent PCs, and physical AI.
+- write a first-pass research brief specialized for known agent-research categories: NVIDIA/hardware-harness talks, agent auth/auth.md, agent lifecycle/LangSmith, future agent architecture, and open-model evaluation.
 
 This is designed for Jason/Evy research ingestion: give Evy a video URL, get the source material and a brief quickly, then refine the brief with LLM analysis.
 
@@ -53,10 +53,19 @@ Expected: all tests pass and the CLI prints usage/help text.
 
 ## Usage
 
-Captions-only path:
+Captions-only path for one video:
 
 ```bash
 src/video-research 'https://youtu.be/O8jg-Shxd3o?si=4HBg7cvAXHPoU8i5' --out ./output/O8jg-Shxd3o
+```
+
+Batch path for multiple videos; each video writes under `./output/<video_id>/`:
+
+```bash
+src/video-research \
+  'https://youtu.be/R9K2574YEAg?si=01kPnAaRQvYYAx_T' \
+  'https://youtu.be/p6Npi-HBoRU?si=XiLUx03ZQTIqNffb' \
+  --out-root ./output
 ```
 
 With local audio transcription fallback if captions are unavailable:

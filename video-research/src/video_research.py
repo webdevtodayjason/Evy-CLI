@@ -187,6 +187,28 @@ def _is_agent_lifecycle_talk(transcript: str, title: str) -> bool:
     ])
 
 
+def _is_future_agent_architecture_talk(transcript: str, title: str) -> bool:
+    haystack = f"{title}\n{transcript}".lower()
+    return any(marker in haystack for marker in [
+        "interrupt 2027",
+        "agents of the future",
+        "what do the agents of the future look like",
+        "two types of agents",
+    ])
+
+
+def _is_open_model_evaluation_talk(transcript: str, title: str) -> bool:
+    haystack = f"{title}\n{transcript}".lower()
+    return any(marker in haystack for marker in [
+        "minimax m3",
+        "mini max m3",
+        "open source model",
+        "opensource ai model",
+        "swe-bench",
+        "toolbench",
+    ])
+
+
 def build_brief(transcript: str, url: str, title: str, video_id: str) -> str:
     def bullets(lines: list[str]) -> str:
         if not lines:
@@ -282,6 +304,94 @@ This talk frames reliable agents as an Agent Development Lifecycle: Build → Te
 - Can Evy's Nook/Railway S3 pattern support durable trace/artifact storage for this lifecycle?
 """
 
+    if _is_future_agent_architecture_talk(transcript, title):
+        long_horizon_lines = _select_lines(transcript, ["long horizon", "minutes and hours", "days", "code execution", "planning", "subagents", "multi-agent", "skills"])
+        latency_lines = _select_lines(transcript, ["latency", "customer experience", "support", "sales", "brand", "voice", "video"])
+        voice_lines = _select_lines(transcript, ["speech to text", "text to speech", "native speech", "native voice", "audio", "voice"])
+        trust_lines = _select_lines(transcript, ["trust", "observability", "behaving", "production", "monitor", "evaluate"])
+        return f"""# Research Brief — {title}
+
+Source: {url}
+Video ID: {video_id}
+
+## One-line thesis
+This is a future agent architecture talk: agents are splitting into long-horizon knowledge workers and latency-sensitive customer/voice agents, while both still depend on a shared harness for tools, memory, observability, and trust.
+
+## Why this matters for Jason
+- Hermes/Evy sits directly at the intersection: long-horizon tool work plus low-latency voice/desk companion interaction.
+- Keelpin should expect agent software to diverge by operating mode: durable asynchronous agents, interactive voice agents, and hybrid agents each produce different provenance and AppSec traces.
+- Voice is not just UX polish; speech-to-speech/native audio models change latency, auditability, transcript provenance, and prompt-injection surface.
+- Trust requires observability into how agents behave, not merely final outputs.
+
+## Key evidence — long-horizon agents
+{bullets(long_horizon_lines)}
+
+## Key evidence — latency-sensitive / customer-experience agents
+{bullets(latency_lines)}
+
+## Key evidence — voice and multimodal interface direction
+{bullets(voice_lines)}
+
+## Key evidence — trust / observability
+{bullets(trust_lines)}
+
+## Research implications
+1. Split agent threat models by operating mode: long-running autonomous worker, low-latency voice agent, and human-in-the-loop hybrid.
+2. For Hermes/Evy, keep optimizing both durable delegation and immediate conversational responsiveness; they are different product constraints sharing one memory/tool harness.
+3. For Keelpin, preserve timestamps, tool calls, intermediate plans, transcript/audio provenance, and escalation points so future agents can be audited after long runs.
+4. Treat native voice models as a new security boundary: audio input, transcription, model action, spoken output, and barge-in all need traceability.
+
+## Follow-up questions
+- Which Hermes traces distinguish a voice interaction from a long-horizon delegated task?
+- How should Keelpin model agent actions that happen over hours or days with multiple resumptions?
+- What observability is needed before Evy can safely run more autonomous background work?
+- Should voice-agent safety checks happen before STT, after STT, before tool call, before TTS, or all four?
+"""
+
+    if _is_open_model_evaluation_talk(transcript, title):
+        model_lines = _select_lines(transcript, ["minimax", "m3", "open source", "opensource", "model", "proprietary"])
+        coding_lines = _select_lines(transcript, ["coding", "swe-bench", "large scale coding", "code", "task decomposition"])
+        tool_lines = _select_lines(transcript, ["tool use", "toolbench", "tool calls", "agents", "autonomous"])
+        cost_lines = _select_lines(transcript, ["cheaper", "cost", "price", "50x", "proprietary", "local"])
+        return f"""# Research Brief — {title}
+
+Source: {url}
+Video ID: {video_id}
+
+## One-line thesis
+This is an open model evaluation brief: MiniMax M3 is presented as a strong open-weight/open-source contender for long-horizon agent work, coding, and tool use, with major cost and local/private deployment implications.
+
+## Why this matters for Jason
+- Jason has enough local infrastructure to make open model evaluation operationally meaningful, not theoretical.
+- For Hermes/Evy, strong cheaper models can shift routine tool-use, summarization, and research workflows closer to local/private execution.
+- For Keelpin, coding-agent benchmarks matter only if paired with provenance: what the model changed, which tools it used, and whether tests/evals caught regressions.
+- Cost/performance claims need reproducible harness tests against Jason-relevant workloads, not just leaderboard trust.
+
+## Key evidence — model positioning
+{bullets(model_lines)}
+
+## Key evidence — coding / long-horizon capability
+{bullets(coding_lines)}
+
+## Key evidence — agent tool use
+{bullets(tool_lines)}
+
+## Key evidence — cost / local-private implications
+{bullets(cost_lines)}
+
+## Research implications
+1. Build a local/private eval harness for Hermes tasks: YouTube research, codebase inspection, AppSec triage, and brief generation.
+2. Evaluate models on tool-call discipline, citation/provenance quality, test-writing behavior, and ability to recover from failed tools.
+3. Treat benchmark wins as hypotheses until validated on Keelpin/Hermes workloads with real traces.
+4. Track open models that can run on Jason's DGX Spark/private infrastructure for privacy-preserving agent workflows.
+
+## Follow-up questions
+- Which Hermes workflows should become the standard open-model eval set?
+- Should Keelpin score coding agents by vulnerability avoidance, fix quality, or trace/provenance completeness?
+- What is the acceptable latency/cost/privacy tradeoff for Evy's routine research jobs?
+- Which model sizes should be tested locally versus via API?
+"""
+
     agent_lines = _select_lines(transcript, ["agent", "harness", "tool", "orchestration", "memory", "storage"])
     system_lines = _select_lines(transcript, ["vera", "rubin", "cpu", "bluefield", "ai factory", "liquid", "fabric"])
     pc_lines = _select_lines(transcript, ["spark", "pc", "unified memory", "trillion", "r2-d2", "c3po"])
@@ -327,6 +437,13 @@ Jensen is describing a platform shift: applications become agent harnesses, infr
 """
 
 
+def resolve_output_dir(video_id: str, out: str | None = None, out_root: str | None = None) -> Path:
+    """Resolve where artifacts for a video should be written."""
+    if out:
+        return Path(out)
+    return Path(out_root or "video-research-output") / video_id
+
+
 def write_artifacts(result: TranscriptResult, out_dir: Path, source_url: str) -> dict[str, Path]:
     out_dir.mkdir(parents=True, exist_ok=True)
     transcript_path = out_dir / "transcript_timestamped.txt"
@@ -347,28 +464,43 @@ def write_artifacts(result: TranscriptResult, out_dir: Path, source_url: str) ->
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Extract YouTube video research artifacts in one shot.")
-    parser.add_argument("url", help="YouTube URL or video ID")
-    parser.add_argument("--out", default=None, help="Output directory; default: ./video-research-output/<video_id>")
+    parser.add_argument("url", nargs="+", help="One or more YouTube URLs or video IDs")
+    parser.add_argument("--out", default=None, help="Exact output directory for a single URL")
+    parser.add_argument("--out-root", default="video-research-output", help="Root output directory for default/batch runs; each video writes under <out-root>/<video_id>")
     parser.add_argument("--language", action="append", default=["en"], help="Caption language preference; repeatable")
     parser.add_argument("--fallback-audio", action="store_true", help="If captions fail, download audio and transcribe with local faster-whisper")
     args = parser.parse_args(argv)
 
-    video_id = extract_video_id(args.url)
-    out_dir = Path(args.out) if args.out else Path("video-research-output") / video_id
-    try:
-        result = fetch_youtube_transcript(args.url, languages=args.language)
-    except Exception as exc:
-        if not args.fallback_audio:
-            print(f"Caption fetch failed: {exc}", file=sys.stderr)
-            return 2
-        result = transcribe_audio_fallback(args.url, out_dir)
-    paths = write_artifacts(result, out_dir, args.url)
-    print(f"title: {result.title}")
-    print(f"duration: {result.duration}")
-    print(f"source: {result.source}")
-    for name, path in paths.items():
-        print(f"{name}: {path}")
-    return 0
+    if args.out and len(args.url) > 1:
+        print("--out can only be used with a single URL; use --out-root for batch runs", file=sys.stderr)
+        return 2
+
+    failures = 0
+    for index, url in enumerate(args.url, start=1):
+        video_id = extract_video_id(url)
+        out_dir = resolve_output_dir(video_id, out=args.out, out_root=args.out_root)
+        try:
+            result = fetch_youtube_transcript(url, languages=args.language)
+        except Exception as exc:
+            if not args.fallback_audio:
+                print(f"Caption fetch failed for {url}: {exc}", file=sys.stderr)
+                failures += 1
+                continue
+            try:
+                result = transcribe_audio_fallback(url, out_dir)
+            except Exception as fallback_exc:
+                print(f"Audio fallback failed for {url}: {fallback_exc}", file=sys.stderr)
+                failures += 1
+                continue
+        paths = write_artifacts(result, out_dir, url)
+        if len(args.url) > 1:
+            print(f"[{index}/{len(args.url)}] video_id: {result.video_id}")
+        print(f"title: {result.title}")
+        print(f"duration: {result.duration}")
+        print(f"source: {result.source}")
+        for name, path in paths.items():
+            print(f"{name}: {path}")
+    return 2 if failures else 0
 
 
 if __name__ == "__main__":  # pragma: no cover

@@ -92,6 +92,59 @@ class VideoResearchTests(unittest.TestCase):
         self.assertIn("traces", brief.lower())
         self.assertIn("Keelpin", brief)
 
+    def test_build_brief_switches_to_future_agent_architecture_when_interrupt_2027_detected(self):
+        transcript = """
+0:47 what do the agents of the future look like?
+1:21 there will be two types of agents.
+1:27 long horizon style agents run for minutes and hours and maybe days.
+1:34 They do code execution. They do planning. They use subagents.
+2:00 a completely different set of agents that latency is a huge factor for.
+2:14 Voice becomes a really interesting modality.
+3:21 native speech-to-speech native voice models are coming out.
+6:42 If you want trust, you need to have some observability into how they're behaving.
+""".strip()
+        brief = video_research.build_brief(
+            transcript,
+            url="https://youtu.be/R9K2574YEAg",
+            title="The Future of AI Agents: What Will Interrupt 2027 Look Like?",
+            video_id="R9K2574YEAg",
+        )
+        self.assertIn("future agent architecture", brief.lower())
+        self.assertIn("long-horizon", brief.lower())
+        self.assertIn("latency-sensitive", brief.lower())
+        self.assertIn("voice", brief.lower())
+        self.assertIn("Keelpin", brief)
+
+    def test_build_brief_switches_to_open_model_evaluation_when_minimax_detected(self):
+        transcript = """
+0:08 Minimax M3 is a new open source model.
+0:42 long horizon agents, large scale coding, and tool use.
+1:37 agent performance with strong autonomous task decomposition.
+2:26 benchmarks include SWE-Bench and ToolBench.
+3:14 nearly 2,000 tool calls.
+7:46 Overall, it did a strong job compared with proprietary models.
+11:30 MiniMax M3 is one of the best open source AI models.
+""".strip()
+        brief = video_research.build_brief(
+            transcript,
+            url="https://youtu.be/p6Npi-HBoRU",
+            title="MiniMax M3 IS INSANE! BEST Opensource AI Model! Beats Opus 4.7 and 50x Cheaper!",
+            video_id="p6Npi-HBoRU",
+        )
+        self.assertIn("open model evaluation", brief.lower())
+        self.assertIn("long-horizon", brief.lower())
+        self.assertIn("coding", brief.lower())
+        self.assertIn("tool use", brief.lower())
+        self.assertIn("local/private", brief.lower())
+
+    def test_resolve_output_dir_uses_video_id_under_out_root_for_batch_runs(self):
+        out_dir = video_research.resolve_output_dir(
+            video_id="R9K2574YEAg",
+            out=None,
+            out_root="video-research/output",
+        )
+        self.assertEqual(out_dir, Path("video-research/output") / "R9K2574YEAg")
+
 
 if __name__ == "__main__":
     unittest.main()
