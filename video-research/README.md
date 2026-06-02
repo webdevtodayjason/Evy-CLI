@@ -13,6 +13,7 @@ Give this README to your AI agent. It explains how to install and use this CLI.
 - write per-video catalogue metadata (`metadata.json`) with category, tags, and relevance lanes;
 - write/update a batch collection index (`_index.json`) under the output root;
 - write/update a morning-show source digest (`_morning_sources.md`) so Evy's Morning AI Brief can treat ingested videos as first-class source material;
+- write/update an Obsidian-native catalogue page (`Video Research Catalogue.md`) listing video title, URL, short description, date of video, and date ingested;
 - write a first-pass research brief specialized for known agent-research categories: NVIDIA/hardware-harness talks, agent auth/auth.md, agent lifecycle/LangSmith, future agent architecture, open-model evaluation, local AI workspaces, dynamic agent workflows, AI-era judgment/evidence, interpretable context methodology, IDE-native coding harnesses, desktop personal agents, source-grounded research notebooks, codebase comprehension agents, codebase knowledge graph comparisons, AI sales automation workflows, and frontier model signal watch.
 
 This is designed for Jason/Evy research ingestion: give Evy a video URL, get the source material and a brief quickly, then refine the brief with LLM analysis.
@@ -87,6 +88,7 @@ output/VIDEO_ID/
   metadata.json
 output/_index.json
 output/_morning_sources.md
+output/Video Research Catalogue.md
 ```
 
 ### Categorization and tags
@@ -100,6 +102,8 @@ Each `metadata.json` contains:
 The batch `_index.json` rolls up all per-video metadata under the output root and lists all videos, categories, tags, and relevance lanes. Use it to answer “what have we collected about X?” without rereading every brief.
 
 `_morning_sources.md` is a ranked Markdown digest intended for Evy's Morning AI Brief. It preserves source URLs, categories, tags, relevance lanes, and brief artifact paths so the show builder can consider ingested video research alongside web/news/repo/paper sources.
+
+`Video Research Catalogue.md` is Obsidian-native human-facing catalogue page. It indexes videos Jason shared and Evy ingested with these columns: video title, video URL, short description, date of video, and date ingested. Keep `_index.json` as the machine source of truth; treat the Obsidian page as the readable vault surface.
 
 ## AI-agent operating notes
 

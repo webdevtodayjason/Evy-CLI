@@ -358,6 +358,50 @@ class VideoResearchTests(unittest.TestCase):
             self.assertIn("keelpin-appsec", digest)
             self.assertIn("Wq6yMdt11LM/brief.md", digest)
 
+    def test_write_obsidian_catalogue_page_indexes_shared_videos(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            videos = [
+                {
+                    "video_id": "Wq6yMdt11LM",
+                    "title": "npm installs can hack your laptop",
+                    "url": "https://youtu.be/Wq6yMdt11LM",
+                    "description": "Package-manager supply-chain hardening for npm/pnpm/bun installs.",
+                    "published_date": "2026-06-01",
+                    "ingested_at": "2026-06-02",
+                    "category": "package supply-chain hardening",
+                    "tags": ["npm", "supply-chain-security"],
+                    "relevance_lanes": ["keelpin-appsec", "provenance"],
+                    "artifacts": {"brief": "brief.md"},
+                    "artifact_dir": "Wq6yMdt11LM",
+                }
+            ]
+            (root / "_index.json").write_text(video_research.json.dumps({"videos": videos}), encoding="utf-8")
+            page_path = video_research.write_obsidian_catalogue_page(root)
+            page = page_path.read_text()
+            self.assertIn("# Video Research Catalogue", page)
+            self.assertIn("| Title | URL | Short description | Date of video | Date ingested |", page)
+            self.assertIn("[npm installs can hack your laptop](https://youtu.be/Wq6yMdt11LM)", page)
+            self.assertIn("Package-manager supply-chain hardening", page)
+            self.assertIn("2026-06-01", page)
+            self.assertIn("2026-06-02", page)
+            self.assertIn("[[Video Research Sources for Evy's Morning AI Brief]]", page)
+
+    def test_write_artifacts_uses_nested_youtube_upload_date_for_published_date(self):
+        result = video_research.TranscriptResult(
+            video_id="dateVideo01",
+            title="Date video",
+            duration="1:00",
+            transcript="0:01 agent observability with html specs",
+            source="youtube-captions",
+            raw={"metadata": {"upload_date": "20260531"}, "segments": []},
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = video_research.write_artifacts(result, Path(tmp), "https://youtu.be/dateVideo01")
+            metadata = video_research.json.loads(paths["metadata"].read_text())
+            self.assertEqual(metadata["published_date"], "2026-05-31")
+            self.assertRegex(metadata["ingested_at"], r"^20\d\d-\d\d-\d\d$")
+
     def test_write_artifacts_emits_metadata_json_with_category_and_tags(self):
         result = video_research.TranscriptResult(
             video_id="qeM-vMakFQ8",

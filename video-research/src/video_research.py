@@ -15,6 +15,7 @@ import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 from typing import Iterable
 from urllib.parse import parse_qs, urlparse
@@ -814,7 +815,25 @@ def _taxonomy_entry(category: str, tags: list[str], relevance_lanes: list[str]) 
         "category": category,
         "tags": sorted(set(tags)),
         "relevance_lanes": sorted(set(relevance_lanes)),
+        "description": _short_description_for_category(category),
     }
+
+
+def _short_description_for_category(category: str) -> str:
+    descriptions = {
+        "managed deep agents": "Production-oriented managed deep-agent runtime with sandboxes, traces, and deployment concerns.",
+        "package supply-chain hardening": "Package-manager supply-chain hardening for npm, pnpm, bun, install scripts, and dependency firewalling.",
+        "parallel coding agent workflow": "Parallel coding-agent workflow using Claude Code, worktrees, GitHub issues, acceptance criteria, and PR review.",
+        "DAG-based autonomous research": "Autonomous research organized as DAG/flywheel workflows with graph-shaped task decomposition and provenance needs.",
+        "agent observability and spec evaluation": "Agent observability and specification-evaluation workflow using HTML/Markdown specs, model comparison, and token/cost signals.",
+        "source-grounded research notebook": "Source-grounded notebook workflow for citations, evidence management, and research synthesis.",
+        "desktop personal agent": "Desktop personal-agent harness with local memory, integrations, action surfaces, approvals, and activity logs.",
+        "codebase comprehension agent": "Agent pipeline for codebase comprehension, architecture extraction, and documentation generation.",
+        "codebase knowledge graph comparison": "Comparison of codebase knowledge graph tools and their fit for SaaS/code understanding.",
+        "ai sales automation workflow": "AI-assisted sales/lead-generation workflow using coding agents and campaign automation.",
+        "frontier model signal watch": "Signal-watch item tracking frontier model rumors, benchmarks, coding-agent capability, and release implications.",
+    }
+    return descriptions.get(category, f"Research video categorized as {category}.")
 
 
 def classify_video(transcript: str, title: str) -> dict:
@@ -919,6 +938,29 @@ def resolve_output_dir(video_id: str, out: str | None = None, out_root: str | No
     return Path(out_root or "video-research-output") / video_id
 
 
+def _normalise_video_date(raw_value: object) -> str:
+    text = str(raw_value or "").strip()
+    if not text:
+        return "unknown"
+    if re.fullmatch(r"\d{8}", text):
+        return f"{text[:4]}-{text[4:6]}-{text[6:8]}"
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", text):
+        return text
+    return text
+
+
+def _published_date_from_raw(raw: dict) -> str:
+    maybe_metadata = raw.get("metadata")
+    metadata = maybe_metadata if isinstance(maybe_metadata, dict) else {}
+    return _normalise_video_date(
+        raw.get("published_date")
+        or raw.get("upload_date")
+        or metadata.get("release_date")
+        or metadata.get("upload_date")
+        or metadata.get("timestamp")
+    )
+
+
 def write_artifacts(result: TranscriptResult, out_dir: Path, source_url: str) -> dict[str, Path]:
     out_dir.mkdir(parents=True, exist_ok=True)
     transcript_path = out_dir / "transcript_timestamped.txt"
@@ -942,6 +984,8 @@ def write_artifacts(result: TranscriptResult, out_dir: Path, source_url: str) ->
         "duration": result.duration,
         "source": result.source,
         "url": source_url,
+        "published_date": _published_date_from_raw(result.raw),
+        "ingested_at": date.today().isoformat(),
         **taxonomy,
         "artifacts": {
             "transcript": "transcript_timestamped.txt",
@@ -980,6 +1024,39 @@ def update_collection_index(out_root: Path) -> Path:
     index_path = out_root / "_index.json"
     index_path.write_text(json.dumps(index, indent=2, ensure_ascii=False), encoding="utf-8")
     return index_path
+
+def _md_escape_cell(value: object) -> str:
+    text = str(value or "unknown").replace("\n", " ").strip()
+    return text.replace("|", "\|")
+
+
+def write_obsidian_catalogue_page(out_root: Path) -> Path:
+    """Render an Obsidian-friendly Markdown catalogue page for ingested videos."""
+    index_path = out_root / "_index.json"
+    index = json.loads(index_path.read_text(encoding="utf-8"))
+    videos = sorted(index.get("videos", []), key=lambda item: (item.get("ingested_at", ""), item.get("title", "")), reverse=True)
+    lines = [
+        "# Video Research Catalogue",
+        "",
+        "Obsidian-native index of videos Jason shared with Evy and ingested into the video-research workflow.",
+        "",
+        "Related: [[Video Research Sources for Evy's Morning AI Brief]]",
+        "",
+        "| Title | URL | Short description | Date of video | Date ingested |",
+        "|---|---|---|---|---|",
+    ]
+    for video in videos:
+        title = _md_escape_cell(video.get("title") or video.get("video_id"))
+        url = str(video.get("url") or "")
+        title_link = f"[{title}]({url})" if url else title
+        description = _md_escape_cell(video.get("description") or _short_description_for_category(video.get("category", "agent systems general")))
+        published = _md_escape_cell(video.get("published_date") or video.get("date_of_video") or "unknown")
+        ingested = _md_escape_cell(video.get("ingested_at") or "unknown")
+        lines.append(f"| {title_link} | {url or 'unknown'} | {description} | {published} | {ingested} |")
+    page_path = out_root / "Video Research Catalogue.md"
+    page_path.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
+    return page_path
+
 
 def write_morning_brief_sources(out_root: Path) -> Path:
     """Render a Markdown digest of indexed video research for Evy's Morning AI Brief."""
@@ -1067,8 +1144,10 @@ def main(argv: list[str] | None = None) -> int:
         out_root = Path(args.out_root)
         index_path = update_collection_index(out_root)
         morning_path = write_morning_brief_sources(out_root)
+        catalogue_path = write_obsidian_catalogue_page(out_root)
         print(f"index: {index_path}")
         print(f"morning_sources: {morning_path}")
+        print(f"obsidian_catalogue: {catalogue_path}")
     return 2 if failures else 0
 
 
