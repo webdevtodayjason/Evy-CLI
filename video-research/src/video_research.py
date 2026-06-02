@@ -772,6 +772,79 @@ Jensen is describing a platform shift: applications become agent harnesses, infr
 """
 
 
+def _taxonomy_entry(category: str, tags: list[str], relevance_lanes: list[str]) -> dict:
+    return {
+        "category": category,
+        "tags": sorted(set(tags)),
+        "relevance_lanes": sorted(set(relevance_lanes)),
+    }
+
+
+def classify_video(transcript: str, title: str) -> dict:
+    """Return catalogue metadata for a research video."""
+    haystack = f"{title}\n{transcript}".lower()
+
+    if "notebooklm" in haystack or "notebook lm" in haystack:
+        return _taxonomy_entry(
+            "source-grounded research notebook",
+            ["notebooklm", "source-grounding", "research-workflow", "citations", "hermes"],
+            ["hermes-evy", "provenance", "workflow-automation"],
+        )
+    if _is_desktop_personal_agent_talk(transcript, title):
+        return _taxonomy_entry(
+            "desktop personal agent",
+            ["openhuman", "desktop-agent", "local-memory", "integrations", "activity-log", "autonomy"],
+            ["hermes-evy", "keelpin-appsec", "competitive-reference"],
+        )
+    if "understand any codebase" in haystack or "pipeline of agents crawls" in haystack:
+        return _taxonomy_entry(
+            "codebase comprehension agent",
+            ["codebase-analysis", "architecture-agent", "agent-pipeline", "github", "documentation"],
+            ["keelpin-appsec", "hermes-evy", "workflow-automation"],
+        )
+    if "understand-anything" in haystack or "graphify" in haystack:
+        return _taxonomy_entry(
+            "codebase knowledge graph comparison",
+            ["codebase-analysis", "knowledge-graph", "graphify", "understand-anything", "saas-analysis"],
+            ["keelpin-appsec", "provenance", "competitive-reference"],
+        )
+    if "lead gen" in haystack or "lead generation" in haystack or "karpathy" in haystack:
+        return _taxonomy_entry(
+            "ai sales automation workflow",
+            ["claude-code", "karpathy", "lead-generation", "workflow-automation", "campaigns"],
+            ["workflow-automation", "competitive-reference", "provenance"],
+        )
+    if "gpt-5.6" in haystack or "gpt 5.6" in haystack or "frontier" in haystack:
+        return _taxonomy_entry(
+            "frontier model signal watch",
+            ["gpt-5.6", "frontier-models", "benchmarks", "coding-agents", "model-rumors"],
+            ["model-watch", "hermes-evy", "keelpin-appsec"],
+        )
+    if _is_agent_auth_talk(transcript, title):
+        return _taxonomy_entry("agent auth and registration", ["auth.md", "idjag", "agent-identity", "api-is-ui"], ["keelpin-appsec", "hermes-evy"])
+    if _is_agent_lifecycle_talk(transcript, title):
+        return _taxonomy_entry("agent development lifecycle", ["langsmith", "traces", "evals", "deploy", "monitoring"], ["keelpin-appsec", "hermes-evy", "provenance"])
+    if _is_future_agent_architecture_talk(transcript, title):
+        return _taxonomy_entry("future agent architecture", ["long-horizon-agents", "voice-agents", "observability", "trust"], ["hermes-evy", "keelpin-appsec"])
+    if _is_open_model_evaluation_talk(transcript, title):
+        return _taxonomy_entry("open model evaluation", ["open-models", "coding", "tool-use", "benchmarks"], ["local-models", "keelpin-appsec", "hermes-evy"])
+    if _is_local_ai_workspace_talk(transcript, title):
+        return _taxonomy_entry("local AI workspace", ["local-ai", "shell-access", "web-search", "memory", "self-hosted"], ["hermes-evy", "keelpin-appsec", "local-models"])
+    if _is_dynamic_workflows_talk(transcript, title):
+        return _taxonomy_entry("dynamic agent workflows", ["claude-code", "parallel-agents", "workflow", "cost-control"], ["workflow-automation", "provenance"])
+    if _is_ai_judgment_evidence_talk(transcript, title):
+        return _taxonomy_entry("AI-era judgment evidence", ["judgment", "evidence", "whiteboard", "decision-trace"], ["provenance", "keelpin-appsec"])
+    if _is_interpretable_context_methodology_talk(transcript, title):
+        return _taxonomy_entry("interpretable context methodology", ["markdown", "folders", "skills", "decision-trace", "context-engineering"], ["hermes-evy", "provenance"])
+    if _is_ide_native_coding_harness_talk(transcript, title):
+        return _taxonomy_entry("IDE-native coding harness", ["lsp", "dap", "debugpy", "hash-line-edits", "coding-agent"], ["keelpin-appsec", "hermes-evy"])
+    return _taxonomy_entry(
+        "agent systems general",
+        ["agent-harness", "ai-systems", "research-inbox"],
+        ["hermes-evy", "keelpin-appsec"],
+    )
+
+
 def resolve_output_dir(video_id: str, out: str | None = None, out_root: str | None = None) -> Path:
     """Resolve where artifacts for a video should be written."""
     if out:
@@ -784,6 +857,7 @@ def write_artifacts(result: TranscriptResult, out_dir: Path, source_url: str) ->
     transcript_path = out_dir / "transcript_timestamped.txt"
     json_path = out_dir / "transcript.json"
     brief_path = out_dir / "brief.md"
+    metadata_path = out_dir / "metadata.json"
     transcript_path.write_text(result.transcript + "\n", encoding="utf-8")
     json_path.write_text(json.dumps({
         "video_id": result.video_id,
@@ -794,8 +868,51 @@ def write_artifacts(result: TranscriptResult, out_dir: Path, source_url: str) ->
         "raw": result.raw,
     }, indent=2, ensure_ascii=False), encoding="utf-8")
     brief_path.write_text(build_brief(result.transcript, source_url, result.title, result.video_id), encoding="utf-8")
-    return {"transcript": transcript_path, "json": json_path, "brief": brief_path}
+    taxonomy = classify_video(result.transcript, result.title)
+    metadata = {
+        "video_id": result.video_id,
+        "title": result.title,
+        "duration": result.duration,
+        "source": result.source,
+        "url": source_url,
+        **taxonomy,
+        "artifacts": {
+            "transcript": "transcript_timestamped.txt",
+            "json": "transcript.json",
+            "brief": "brief.md",
+            "metadata": "metadata.json",
+        },
+    }
+    metadata_path.write_text(json.dumps(metadata, indent=2, ensure_ascii=False), encoding="utf-8")
+    return {"transcript": transcript_path, "json": json_path, "brief": brief_path, "metadata": metadata_path}
 
+
+def update_collection_index(out_root: Path) -> Path:
+    """Write a collection index from per-video metadata files under an output root."""
+    videos = []
+    for metadata_path in sorted(out_root.glob("*/metadata.json")):
+        try:
+            item = json.loads(metadata_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            continue
+        item = dict(item)
+        item["artifact_dir"] = metadata_path.parent.name
+        videos.append(item)
+    videos.sort(key=lambda item: item.get("video_id", ""))
+    categories = sorted({v.get("category", "uncategorized") for v in videos})
+    tags = sorted({tag for v in videos for tag in v.get("tags", [])})
+    relevance_lanes = sorted({lane for v in videos for lane in v.get("relevance_lanes", [])})
+    index = {
+        "schema": "evy.video-research.index.v1",
+        "video_count": len(videos),
+        "categories": categories,
+        "tags": tags,
+        "relevance_lanes": relevance_lanes,
+        "videos": videos,
+    }
+    index_path = out_root / "_index.json"
+    index_path.write_text(json.dumps(index, indent=2, ensure_ascii=False), encoding="utf-8")
+    return index_path
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Extract YouTube video research artifacts in one shot.")
@@ -835,6 +952,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"source: {result.source}")
         for name, path in paths.items():
             print(f"{name}: {path}")
+    if not args.out:
+        index_path = update_collection_index(Path(args.out_root))
+        print(f"index: {index_path}")
     return 2 if failures else 0
 
 

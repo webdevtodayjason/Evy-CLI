@@ -1,5 +1,6 @@
 import importlib.util
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -281,6 +282,70 @@ class VideoResearchTests(unittest.TestCase):
         self.assertIn("subconscious loop", brief.lower())
         self.assertIn("meeting agent", brief.lower())
         self.assertIn("Hermes/Evy", brief)
+
+    def test_classify_video_returns_category_tags_and_relevance_lanes(self):
+        transcript = """
+0:52 Notebook LM is a free AI tool made by Google.
+2:14 connects Notebook LM to your AI agent.
+4:22 Hermes stores notes, sources, and research outputs.
+5:30 source grounded notebooks help with citations and provenance.
+""".strip()
+        metadata = video_research.classify_video(
+            transcript,
+            title="New NotebookLM + Hermes is INSANE! (FREE)",
+        )
+        self.assertEqual(metadata["category"], "source-grounded research notebook")
+        self.assertIn("notebooklm", metadata["tags"])
+        self.assertIn("source-grounding", metadata["tags"])
+        self.assertIn("hermes-evy", metadata["relevance_lanes"])
+        self.assertIn("provenance", metadata["relevance_lanes"])
+
+    def test_write_artifacts_emits_metadata_json_with_category_and_tags(self):
+        result = video_research.TranscriptResult(
+            video_id="qeM-vMakFQ8",
+            title="Understand Any Codebase 10x Faster with Claude, 44k stars on github",
+            duration="4:10",
+            transcript="0:40 a pipeline of agents crawls the codebase.\n3:05 An architecture agent sorts the layers.",
+            source="youtube-captions",
+            raw={"segments": []},
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = video_research.write_artifacts(result, Path(tmp), "https://youtu.be/qeM-vMakFQ8")
+            self.assertIn("metadata", paths)
+            metadata = video_research.json.loads(paths["metadata"].read_text())
+            self.assertEqual(metadata["video_id"], "qeM-vMakFQ8")
+            self.assertEqual(metadata["category"], "codebase comprehension agent")
+            self.assertIn("codebase-analysis", metadata["tags"])
+            self.assertIn("keelpin-appsec", metadata["relevance_lanes"])
+
+    def test_update_collection_index_writes_sorted_video_catalogue(self):
+        first = {
+            "video_id": "b-video-id01",
+            "title": "B video",
+            "category": "desktop personal agent",
+            "tags": ["openhuman"],
+            "relevance_lanes": ["hermes-evy"],
+            "artifacts": {"brief": "b-video-id01/brief.md"},
+        }
+        second = {
+            "video_id": "a-video-id01",
+            "title": "A video",
+            "category": "source-grounded research notebook",
+            "tags": ["notebooklm"],
+            "relevance_lanes": ["provenance"],
+            "artifacts": {"brief": "a-video-id01/brief.md"},
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for item in [first, second]:
+                d = root / item["video_id"]
+                d.mkdir()
+                (d / "metadata.json").write_text(video_research.json.dumps(item), encoding="utf-8")
+            index_path = video_research.update_collection_index(root)
+            index = video_research.json.loads(index_path.read_text())
+            self.assertEqual([v["video_id"] for v in index["videos"]], ["a-video-id01", "b-video-id01"])
+            self.assertIn("source-grounded research notebook", index["categories"])
+            self.assertIn("notebooklm", index["tags"])
 
     def test_resolve_output_dir_uses_video_id_under_out_root_for_batch_runs(self):
         out_dir = video_research.resolve_output_dir(
