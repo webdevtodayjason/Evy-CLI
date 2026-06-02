@@ -172,16 +172,65 @@ def _select_lines(transcript: str, needles: Iterable[str], limit: int = 6) -> li
     return selected[:limit]
 
 
-def build_brief(transcript: str, url: str, title: str, video_id: str) -> str:
-    agent_lines = _select_lines(transcript, ["agent", "harness", "tool", "orchestration", "memory", "storage"])
-    system_lines = _select_lines(transcript, ["vera", "rubin", "cpu", "bluefield", "ai factory", "liquid", "fabric"])
-    pc_lines = _select_lines(transcript, ["spark", "pc", "unified memory", "trillion", "r2-d2", "c3po"])
-    physical_lines = _select_lines(transcript, ["cosmos", "physical ai", "robot", "hyperion", "isaac", "humanoid"])
+def _is_agent_auth_talk(transcript: str, title: str) -> bool:
+    haystack = f"{title}\n{transcript}".lower()
+    return any(marker in haystack for marker in ["auth.md", "auth dot m d", "idjag", "agentic registration"])
 
+
+def build_brief(transcript: str, url: str, title: str, video_id: str) -> str:
     def bullets(lines: list[str]) -> str:
         if not lines:
             return "- No direct timestamped hits found in this transcript slice."
         return "\n".join(f"- {line}" for line in lines)
+
+    if _is_agent_auth_talk(transcript, title):
+        harness_lines = _select_lines(transcript, ["runtime", "permissions", "isolation", "scoped credentials", "harness", "feedback"])
+        registration_lines = _select_lines(transcript, ["agentic registration", "auth.md", "auth dot m d", "legitimate users", "sign up", "register"])
+        idjag_lines = _select_lines(transcript, ["IDJAG", "JWT", "issuer", "audience", "access token"])
+        strategy_lines = _select_lines(transcript, ["agent ready", "enterprise ready", "API is the UI", "MCP is not enough", "agent economy"])
+        return f"""# Research Brief — {title}
+
+Source: {url}
+Video ID: {video_id}
+
+## One-line thesis
+This talk argues that autonomous agents need agent-native registration: a discoverable, auditable way to prove identity, receive scoped tokens, and become legitimate API users without pretending to be humans.
+
+## Why this matters for Jason
+- The talk reinforces that the harness is the product: runtime, isolation, permissions, tools, context, feedback loops, and review.
+- For Keelpin, agent identity and token scope become code-provenance and AppSec artifacts, not merely auth plumbing.
+- For Hermes/Evy, auth.md-style discovery fits the direction of agent-readable CLIs, MCP tools, signed webhooks, scoped credentials, and service delegation.
+- Agent-ready is the next enterprise-ready: products that agents cannot discover, register for, and use will be disadvantaged.
+
+## Key evidence — harness requirements
+{bullets(harness_lines)}
+
+## Key evidence — agent-native registration / auth.md
+{bullets(registration_lines)}
+
+## Key evidence — IDJAG / token exchange
+{bullets(idjag_lines)}
+
+## Key evidence — strategic frame
+{bullets(strategy_lines)}
+
+## Research implications
+1. Model agent identity, token scope, and tool/API calls as first-class provenance edges in Keelpin/Joern/Argus workflows.
+2. Lint auth.md-style files for risky identity proofs, over-broad scopes, anonymous signup policy, claim flows, and revocation gaps.
+3. Treat APIs, CLIs, MCP servers, llms.txt, and auth.md as the agent-facing UI surface.
+4. Build Hermes/Evy service integrations around explicit delegation: Jason identity vs Evy service identity vs anonymous/claimable agent identity.
+
+## Follow-up questions
+- How should Keelpin represent an agent-created PR and the credentials used to create it?
+- What minimum scopes should an autonomous coding agent receive for deploy, CI, logs, databases, and issue trackers?
+- Should Evy-CLI tools publish llms.txt/auth.md-style manifests for agent discovery?
+- How does auth.md compare with OAuth device flow, OIDC federation, SPIFFE/SPIRE, and MCP auth?
+"""
+
+    agent_lines = _select_lines(transcript, ["agent", "harness", "tool", "orchestration", "memory", "storage"])
+    system_lines = _select_lines(transcript, ["vera", "rubin", "cpu", "bluefield", "ai factory", "liquid", "fabric"])
+    pc_lines = _select_lines(transcript, ["spark", "pc", "unified memory", "trillion", "r2-d2", "c3po"])
+    physical_lines = _select_lines(transcript, ["cosmos", "physical ai", "robot", "hyperion", "isaac", "humanoid"])
 
     return f"""# Research Brief — {title}
 

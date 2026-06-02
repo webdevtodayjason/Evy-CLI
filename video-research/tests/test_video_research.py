@@ -44,6 +44,31 @@ class VideoResearchTests(unittest.TestCase):
         self.assertIn("physical ai", brief.lower())
         self.assertIn("Source", brief)
 
+    def test_build_brief_switches_to_agent_auth_when_authmd_detected(self):
+        transcript = """
+8:07 you need a runtime. It has to be secure, permissions, isolation, and scoped credentials.
+9:43 A lot of people describe these things together as the harness.
+16:14 that is agentic registration.
+17:50 MCP is great but MCP is not enough for this.
+18:43 we're calling it auth dot m d.
+19:14 Auth.md tells agents how they can become legitimate users in your system.
+23:31 converting it into what's called an IDJAG.
+30:14 the agent will send that IDJAG assertion and it receives back an access token.
+32:32 agent ready is actually the next enterprise ready.
+33:55 Our API is the UI.
+""".strip()
+        brief = video_research.build_brief(
+            transcript,
+            url="https://youtu.be/Dqp_b8GHLXU",
+            title="Unlock Autonomous AI Agents with auth.md",
+            video_id="Dqp_b8GHLXU",
+        )
+        self.assertIn("agent-native registration", brief.lower())
+        self.assertIn("IDJAG", brief)
+        self.assertIn("MCP is not enough", brief)
+        self.assertIn("agent-ready is the next enterprise-ready", brief.lower())
+        self.assertIn("Keelpin", brief)
+
 
 if __name__ == "__main__":
     unittest.main()
