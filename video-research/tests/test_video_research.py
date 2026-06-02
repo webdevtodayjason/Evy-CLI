@@ -137,6 +137,77 @@ class VideoResearchTests(unittest.TestCase):
         self.assertIn("tool use", brief.lower())
         self.assertIn("local/private", brief.lower())
 
+    def test_build_brief_switches_to_local_ai_workspace_when_odysseus_detected(self):
+        transcript = """
+0:12 AI tool called Odyssey S. He calls it an AI workspace.
+0:20 something that you should self-host.
+0:24 use agents that are based on open code.
+0:33 There's also deep research.
+0:59 also get memory, email, notes, calendar.
+2:25 There are two ways to chat. One is agent and one is chat.
+2:30 tools that the AI model can use, which are mainly web search and shell access.
+4:20 since it's local, you don't need any internet connection.
+""".strip()
+        brief = video_research.build_brief(
+            transcript,
+            url="https://youtu.be/-CoCF9koVfc",
+            title="Odysseus + Gemma-4 26B & FREE APIs: RIP Hermes & OpenClaw!",
+            video_id="-CoCF9koVfc",
+        )
+        self.assertIn("local ai workspace", brief.lower())
+        self.assertIn("self-hosted", brief.lower())
+        self.assertIn("web search", brief.lower())
+        self.assertIn("shell access", brief.lower())
+        self.assertIn("Hermes/Evy", brief)
+
+    def test_build_brief_switches_to_dynamic_workflows_when_claude_workflows_detected(self):
+        transcript = """
+0:40 what this feature is and how it works.
+1:06 with the release of Claude Opus 4.8, we got dynamic workflows.
+2:57 workflows are basically Claude code writing a script that runs these many agents.
+3:21 workflows can be saved and re-ran whenever you want.
+9:54 depth versus width.
+10:37 each agent is a full Claude call.
+11:11 bound the scope, name the deliverable.
+11:23 slash deep research function automatically invokes a workflow.
+13:55 it was storing them somewhere else more global.
+15:41 if you want a giant parallel job, use the new dynamic workflows.
+""".strip()
+        brief = video_research.build_brief(
+            transcript,
+            url="https://youtu.be/jZgcWCzxh1I",
+            title="Claude Code Dynamic Workflows Clearly Explained",
+            video_id="jZgcWCzxh1I",
+        )
+        self.assertIn("dynamic workflows", brief.lower())
+        self.assertIn("width", brief.lower())
+        self.assertIn("bound the scope", brief.lower())
+        self.assertIn("token", brief.lower())
+        self.assertIn("Hermes", brief)
+
+    def test_build_brief_switches_to_ai_judgment_evidence_when_resume_whiteboard_detected(self):
+        transcript = """
+0:00 Microsoft says that 86% of us are treating AI output as just the beginning.
+0:28 It's an evidence problem.
+1:01 better ways to see human judgment at work.
+1:18 the AI age is the age of whiteboards.
+4:23 situation, decision, risk, and change.
+6:39 judgment under pressure.
+7:06 comprehension over generation, explanation as artifact, and a record of real work.
+""".strip()
+        brief = video_research.build_brief(
+            transcript,
+            url="https://youtu.be/UsCgEuIAclE",
+            title="Microsoft Says 86% Treat AI Output as a Starting Point. Your Resume Just Stopped Working.",
+            video_id="UsCgEuIAclE",
+        )
+        self.assertIn("judgment evidence", brief.lower())
+        self.assertIn("comprehension over generation", brief.lower())
+        self.assertIn("situation", brief.lower())
+        self.assertIn("decision", brief.lower())
+        self.assertIn("risk", brief.lower())
+        self.assertIn("Keelpin", brief)
+
     def test_resolve_output_dir_uses_video_id_under_out_root_for_batch_runs(self):
         out_dir = video_research.resolve_output_dir(
             video_id="R9K2574YEAg",

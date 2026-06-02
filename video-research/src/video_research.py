@@ -209,6 +209,41 @@ def _is_open_model_evaluation_talk(transcript: str, title: str) -> bool:
     ])
 
 
+def _is_local_ai_workspace_talk(transcript: str, title: str) -> bool:
+    haystack = f"{title}\n{transcript}".lower()
+    return any(marker in haystack for marker in [
+        "odyssey s",
+        "odysseus",
+        "ai workspace",
+        "cookbook that scans your hardware",
+        "web search and shell access",
+        "memory, email, notes, calendar",
+    ])
+
+
+def _is_dynamic_workflows_talk(transcript: str, title: str) -> bool:
+    haystack = f"{title}\n{transcript}".lower()
+    return any(marker in haystack for marker in [
+        "dynamic workflows",
+        "claude code dynamic workflows",
+        "workflow is claude basically creates a javascript file",
+        "workflows are basically claude code writing a script",
+        "giant parallel job",
+    ])
+
+
+def _is_ai_judgment_evidence_talk(transcript: str, title: str) -> bool:
+    haystack = f"{title}\n{transcript}".lower()
+    return any(marker in haystack for marker in [
+        "treating ai output as just the beginning",
+        "evidence problem",
+        "human judgment",
+        "age of whiteboards",
+        "situation, decision, risk, and change",
+        "comprehension over generation",
+    ])
+
+
 def build_brief(transcript: str, url: str, title: str, video_id: str) -> str:
     def bullets(lines: list[str]) -> str:
         if not lines:
@@ -390,6 +425,138 @@ This is an open model evaluation brief: MiniMax M3 is presented as a strong open
 - Should Keelpin score coding agents by vulnerability avoidance, fix quality, or trace/provenance completeness?
 - What is the acceptable latency/cost/privacy tradeoff for Evy's routine research jobs?
 - Which model sizes should be tested locally versus via API?
+"""
+
+    if _is_local_ai_workspace_talk(transcript, title):
+        setup_lines = _select_lines(transcript, ["self-host", "clone", "local interface", "admin", "Ollama", "scan", "download", "serve"])
+        workspace_lines = _select_lines(transcript, ["AI workspace", "memory", "email", "notes", "calendar", "library", "documents", "brain"])
+        tool_lines = _select_lines(transcript, ["agent", "chat", "web search", "shell access", "commands", "deep research", "compare"])
+        local_lines = _select_lines(transcript, ["local models", "Gemma", "Open Router", "Nvidia NIM", "free", "offline", "internet connection"])
+        return f"""# Research Brief — {title}
+
+Source: {url}
+Video ID: {video_id}
+
+## One-line thesis
+This is a local AI workspace brief: Odysseus/Odyssey S packages self-hosted models, agents, web search, shell access, memory, mail, notes, calendar, deep research, and model-management into one local-first UI.
+
+## Why this matters for Jason
+- Hermes/Evy should watch this category closely: it is the same “agent workspace” surface Jason wants, but with different tradeoffs around local models, UI, memory, and tool access.
+- The dangerous/useful primitive is web search plus shell access: powerful for research and automation, but it needs explicit scope, provenance, and command audit logs.
+- Cookbook-style hardware scanning/model recommendation is relevant to Jason’s DGX/Mac/Pi fleet because local/private model routing should become easy and reproducible.
+- For Keelpin, local agent workspaces create a need to scan not only code, but agent configuration, memory, tools, shell permissions, and API provider setup.
+
+## Key evidence — self-hosted setup / model management
+{bullets(setup_lines)}
+
+## Key evidence — workspace surface
+{bullets(workspace_lines)}
+
+## Key evidence — agent tools / research
+{bullets(tool_lines)}
+
+## Key evidence — local/private model direction
+{bullets(local_lines)}
+
+## Research implications
+1. Treat “local AI workspace” apps as harness competitors: model router, tool permissions, memory, UI, research, and shell all bundled together.
+2. Build Hermes/Evy provenance around local tool use: every shell command, search, note/memory read, and generated report should have traceable source context.
+3. Evaluate whether cookbook-style model discovery belongs in Evy-CLI for Jason’s private infrastructure.
+4. Use Keelpin to reason about workspace risk: over-broad shell access, hidden provider keys, unsafe memory exposure, and unreviewed local automation.
+
+## Follow-up questions
+- Which local workspace features should Evy absorb versus merely interoperate with?
+- What is the minimum safe permission model for a local agent with shell access?
+- Could Evy-CLI grow a model-cookbook command for local model discovery and routing?
+- How should Keelpin represent local AI workspace configuration as AppSec input?
+"""
+
+    if _is_dynamic_workflows_talk(transcript, title):
+        concept_lines = _select_lines(transcript, ["dynamic workflows", "JavaScript file", "script", "many agents", "saved", "re-ran"])
+        comparison_lines = _select_lines(transcript, ["skills", "sub-agents", "agent teams", "goal", "depth versus width", "width play"])
+        cost_lines = _select_lines(transcript, ["tokens", "expensive", "full Claude call", "session limit", "burn money", "Haiku"])
+        guardrail_lines = _select_lines(transcript, ["bound the scope", "name the deliverable", "explicit", "criteria", "workflow", "permissions", "global"])
+        return f"""# Research Brief — {title}
+
+Source: {url}
+Video ID: {video_id}
+
+## One-line thesis
+This is a dynamic workflows brief: Claude Code workflows turn one request into a generated script that fans out many agents horizontally, then merges results, making them useful for wide parallel jobs but risky for token spend, scope control, and artifact placement.
+
+## Why this matters for Jason
+- Hermes already has a safer analog in `delegate_task` plus cron/jobs/skills; this talk helps sharpen when to use width-based parallelism versus depth-based goal loops.
+- The “script that runs agents” pattern is exactly why workflow artifacts, working directories, and generated plans must be visible and versioned.
+- For Keelpin, dynamic workflows are provenance-heavy: every worker, model, tool call, token/cost footprint, and synthesized claim should be traceable.
+- The key operational rule is: bound the scope, name the deliverable, set model/cost limits, and choose the right lane: skill, subagent, team, goal, or workflow.
+
+## Key evidence — what dynamic workflows are
+{bullets(concept_lines)}
+
+## Key evidence — skills/subagents/teams/goals comparison
+{bullets(comparison_lines)}
+
+## Key evidence — token/cost risks
+{bullets(cost_lines)}
+
+## Key evidence — guardrails / artifact placement
+{bullets(guardrail_lines)}
+
+## Research implications
+1. Add a “parallel width vs iterative depth” decision rule to Hermes/Evy workflow design.
+2. Require explicit output paths for generated workflow artifacts; never allow silent global placement for reusable automation.
+3. Log per-worker cost, model, input scope, tools, and final merge evidence so wide research jobs remain auditable.
+4. Prefer cheaper models for independent scoring/retrieval workers and reserve high-end synthesis for the final merge.
+
+## Follow-up questions
+- Should Evy-CLI expose a workflow-runner command for reproducible wide research jobs?
+- What should Hermes record for each delegated worker: prompt, model, tools, cost, artifacts, or all of them?
+- Which Jason workflows are truly wide enough to justify 20–50 workers?
+- Can Keelpin detect unsafe generated workflow scripts before execution?
+"""
+
+    if _is_ai_judgment_evidence_talk(transcript, title):
+        evidence_lines = _select_lines(transcript, ["evidence problem", "human judgment", "look productive", "old evidence", "quality", "final answer"])
+        whiteboard_lines = _select_lines(transcript, ["whiteboard", "live reasoning", "pressure", "push", "update", "confidence"])
+        sdrc_lines = _select_lines(transcript, ["situation", "decision", "risk", "change", "rejected", "constraints"])
+        artifact_lines = _select_lines(transcript, ["comprehension over generation", "explanation as artifact", "record of real work", "talent board", "portfolio", "resume"])
+        return f"""# Research Brief — {title}
+
+Source: {url}
+Video ID: {video_id}
+
+## One-line thesis
+This is a judgment evidence brief: as AI makes polished output cheap, the scarce signal becomes visible human judgment — situation framing, decisions, rejected options, risk reasoning, and the change created by the person’s involvement.
+
+## Why this matters for Jason
+- This applies directly to AI-assisted engineering: the output artifact is no longer enough; we need provenance of reasoning, review, rejection, risk, and change.
+- For Keelpin, “comprehension over generation” maps to AppSec evidence: what risk was seen, what was rejected, what changed, and whether the decision survived scrutiny.
+- For Hermes/Evy, briefs and workflows should preserve not only final answers but decision trails: assumptions, alternatives, verification, and unresolved risk.
+- For hiring/team evaluation, live whiteboard-style evidence and durable post-hoc artifacts can distinguish judgment from AI polish.
+
+## Key evidence — AI makes old evidence weaker
+{bullets(evidence_lines)}
+
+## Key evidence — whiteboard/live reasoning
+{bullets(whiteboard_lines)}
+
+## Key evidence — situation / decision / risk / change
+{bullets(sdrc_lines)}
+
+## Key evidence — comprehension over generation
+{bullets(artifact_lines)}
+
+## Research implications
+1. Treat “judgment evidence” as a first-class artifact in agentic work: situation, decision, rejected paths, risk, and change.
+2. Extend Keelpin-style provenance beyond code generation into reasoning provenance and risk acceptance records.
+3. Have Evy preserve lightweight decision logs for major research/build tasks so future reviews see why a path was chosen.
+4. Build evaluation rubrics that score comprehension, risk reasoning, and response to pushback — not just output polish.
+
+## Follow-up questions
+- What should Evy capture in a decision log without making the workflow heavy?
+- How can Keelpin represent rejected alternatives and accepted risk as graph edges?
+- Could generated briefs include a Situation/Decision/Risk/Change section by default for strategic videos?
+- What human review signals should be attached to AI-generated code or reports?
 """
 
     agent_lines = _select_lines(transcript, ["agent", "harness", "tool", "orchestration", "memory", "storage"])
