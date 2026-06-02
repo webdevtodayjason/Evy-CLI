@@ -9,6 +9,11 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.venv/
+
+# Local generated research artifacts
+video-research/output/
+video-research/video-research-output/
 
 # OS/editor
 .DS_Store

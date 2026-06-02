@@ -10,6 +10,7 @@ Each tool lives in its own subfolder as a small, copyable project with an AI-age
 | --- | --- | --- |
 | Pastes.io CLI | Create, read, list, and delete Pastes.io pastebin entries from the terminal. | `pastes/` |
 | Evy Mail CLI | Send email through Resend with a mandatory approved-recipient whitelist. | `evy-mail/` |
+| Video Research CLI | Extract YouTube transcripts and generate timestamped research artifacts/briefs. | `video-research/` |
 
 ## Repository convention
 
