@@ -727,6 +727,43 @@ This is a desktop personal agent brief: OpenHuman packages a consumer-installabl
 - Should Evy’s cron/heartbeat routines expose a user-facing activity log similar to OpenHuman?
 """
 
+    taxonomy = classify_video(transcript, title)
+    if taxonomy["category"] != "agent systems general":
+        evidence_lines = _select_lines(transcript, taxonomy["tags"] + taxonomy["relevance_lanes"] + [taxonomy["category"], "agent", "workflow", "security", "observability", "provenance", "worktree", "DAG", "npm", "Socket", "spec", "Claude Code"], limit=10)
+        return f"""# Research Brief — {title}
+
+Source: {url}
+Video ID: {video_id}
+
+## Category
+{taxonomy["category"]}
+
+## Tags
+{", ".join(taxonomy["tags"])}
+
+## Relevance lanes
+{", ".join(taxonomy["relevance_lanes"])}
+
+## One-line thesis
+This video belongs in the {taxonomy["category"]} shelf. Treat it as first-class research input for Hermes/Evy, Keelpin/AppSec, provenance, workflow automation, or the morning briefing depending on its relevance lanes.
+
+## Why this matters for Jason
+- The category and tags make this video retrievable from the research catalogue instead of being trapped in a one-off brief.
+- The relevance lanes indicate whether it should influence Hermes/Evy design, Keelpin AppSec/provenance work, local model strategy, workflow automation, or the morning show.
+- The timestamped evidence below should be used as source material for deeper synthesis rather than trusting the title alone.
+
+## Key evidence
+{bullets(evidence_lines)}
+
+## Morning brief angle
+Use this when the morning show needs a sourced segment on {taxonomy["category"]}. Prefer concrete claims from the transcript, cite the source URL, and link back to this artifact directory.
+
+## Research implications
+1. Preserve the transcript and metadata as source material; do not summarize without provenance.
+2. Cross-link this video through tags and relevance lanes in `_index.json` and `_morning_sources.md`.
+3. If this category keeps recurring, promote it from generic taxonomy brief to a dedicated brief template.
+"""
+
     agent_lines = _select_lines(transcript, ["agent", "harness", "tool", "orchestration", "memory", "storage"])
     system_lines = _select_lines(transcript, ["vera", "rubin", "cpu", "bluefield", "ai factory", "liquid", "fabric"])
     pc_lines = _select_lines(transcript, ["spark", "pc", "unified memory", "trillion", "r2-d2", "c3po"])
@@ -784,6 +821,36 @@ def classify_video(transcript: str, title: str) -> dict:
     """Return catalogue metadata for a research video."""
     haystack = f"{title}\n{transcript}".lower()
 
+    if "managed deep agents" in haystack or "deep agents" in haystack:
+        return _taxonomy_entry(
+            "managed deep agents",
+            ["deep-agents", "managed-agents", "langsmith", "sandboxes", "production-agents"],
+            ["hermes-evy", "keelpin-appsec", "provenance"],
+        )
+    if "npm installs" in haystack or "install scripts" in haystack or "socket firewall" in haystack or "release age" in haystack:
+        return _taxonomy_entry(
+            "package supply-chain hardening",
+            ["npm", "pnpm", "bun", "supply-chain-security", "install-scripts", "socket-firewall", "mpq"],
+            ["keelpin-appsec", "provenance", "workflow-automation"],
+        )
+    if "multiple claude code agents" in haystack or "git work trees" in haystack or "github issues" in haystack and "acceptance criteria" in haystack:
+        return _taxonomy_entry(
+            "parallel coding agent workflow",
+            ["claude-code", "parallel-agents", "git-worktrees", "github-issues", "acceptance-criteria", "pull-requests"],
+            ["hermes-evy", "workflow-automation", "provenance", "keelpin-appsec"],
+        )
+    if "directed asylic graph" in haystack or "directed acyclic graph" in haystack or "paradigma" in haystack or "flywheel" in haystack:
+        return _taxonomy_entry(
+            "DAG-based autonomous research",
+            ["dag", "auto-research", "paradigma", "flywheel", "mcp", "research-graph"],
+            ["workflow-automation", "provenance", "hermes-evy", "competitive-reference"],
+        )
+    if "agent observability" in haystack or "html specs" in haystack or "trade-off triangle" in haystack or "tokens per second" in haystack:
+        return _taxonomy_entry(
+            "agent observability and spec evaluation",
+            ["agent-observability", "html-specs", "markdown-specs", "token-cost", "gemini", "pi"],
+            ["hermes-evy", "keelpin-appsec", "provenance", "model-watch"],
+        )
     if "notebooklm" in haystack or "notebook lm" in haystack:
         return _taxonomy_entry(
             "source-grounded research notebook",
@@ -914,6 +981,50 @@ def update_collection_index(out_root: Path) -> Path:
     index_path.write_text(json.dumps(index, indent=2, ensure_ascii=False), encoding="utf-8")
     return index_path
 
+def write_morning_brief_sources(out_root: Path) -> Path:
+    """Render a Markdown digest of indexed video research for Evy's Morning AI Brief."""
+    index_path = out_root / "_index.json"
+    index = json.loads(index_path.read_text(encoding="utf-8"))
+    videos = list(index.get("videos", []))
+    lane_priority = {
+        "keelpin-appsec": 0,
+        "hermes-evy": 1,
+        "provenance": 2,
+        "workflow-automation": 3,
+        "model-watch": 4,
+        "local-models": 5,
+        "competitive-reference": 6,
+    }
+
+    def score(video: dict) -> tuple[int, str]:
+        lanes = video.get("relevance_lanes", [])
+        best = min((lane_priority.get(lane, 99) for lane in lanes), default=99)
+        return best, video.get("title", "")
+
+    lines = [
+        "# Video Research Sources for Evy's Morning AI Brief",
+        "",
+        "Use this digest as first-class source material when selecting morning-show segments. Every item links back to timestamped transcripts, metadata, and the generated research brief.",
+        "",
+    ]
+    for video in sorted(videos, key=score):
+        artifact_dir = video.get("artifact_dir") or video.get("video_id")
+        brief_path = f"{artifact_dir}/{video.get('artifacts', {}).get('brief', 'brief.md')}"
+        lines.extend([
+            f"## {video.get('title', video.get('video_id', 'untitled'))}",
+            f"- Video ID: `{video.get('video_id', '')}`",
+            f"- Category: {video.get('category', 'uncategorized')}",
+            f"- Relevance lanes: {', '.join(video.get('relevance_lanes', []))}",
+            f"- Tags: {', '.join(video.get('tags', []))}",
+            f"- Source: {video.get('url', '')}",
+            f"- Brief artifact: `{brief_path}`",
+            "",
+        ])
+    digest_path = out_root / "_morning_sources.md"
+    digest_path.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
+    return digest_path
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Extract YouTube video research artifacts in one shot.")
     parser.add_argument("url", nargs="+", help="One or more YouTube URLs or video IDs")
@@ -953,8 +1064,11 @@ def main(argv: list[str] | None = None) -> int:
         for name, path in paths.items():
             print(f"{name}: {path}")
     if not args.out:
-        index_path = update_collection_index(Path(args.out_root))
+        out_root = Path(args.out_root)
+        index_path = update_collection_index(out_root)
+        morning_path = write_morning_brief_sources(out_root)
         print(f"index: {index_path}")
+        print(f"morning_sources: {morning_path}")
     return 2 if failures else 0
 
 

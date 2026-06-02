@@ -300,6 +300,64 @@ class VideoResearchTests(unittest.TestCase):
         self.assertIn("hermes-evy", metadata["relevance_lanes"])
         self.assertIn("provenance", metadata["relevance_lanes"])
 
+    def test_classify_video_detects_npm_supply_chain_hardening(self):
+        metadata = video_research.classify_video(
+            "0:40 stop downloading new packages.\n2:07 turn off install scripts.\n5:14 mpq.\n5:57 Socket Firewall.",
+            title="npm installs can hack your laptop (Here's how to stop it)",
+        )
+        self.assertEqual(metadata["category"], "package supply-chain hardening")
+        self.assertIn("npm", metadata["tags"])
+        self.assertIn("supply-chain-security", metadata["tags"])
+        self.assertIn("keelpin-appsec", metadata["relevance_lanes"])
+
+    def test_build_brief_uses_taxonomy_for_parallel_claude_code_worktrees(self):
+        transcript = """
+0:00 running multiple claude code agents at the same time.
+2:51 GitHub issues and acceptance criteria.
+7:40 Git work trees are separate isolated copies of your project.
+18:12 create pull requests and merge them safely.
+""".strip()
+        brief = video_research.build_brief(
+            transcript,
+            url="https://youtu.be/B8kSsEDk0TQ",
+            title="My Multi-Agent Claude Code Setup (steal my workflows!)",
+            video_id="B8kSsEDk0TQ",
+        )
+        self.assertIn("parallel coding agent workflow", brief.lower())
+        self.assertIn("worktrees", brief.lower())
+        self.assertNotIn("Jensen is describing", brief)
+
+    def test_write_morning_brief_sources_renders_ranked_digest(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            videos = [
+                {
+                    "video_id": "Wq6yMdt11LM",
+                    "title": "npm installs can hack your laptop",
+                    "category": "package supply-chain hardening",
+                    "tags": ["npm", "supply-chain-security"],
+                    "relevance_lanes": ["keelpin-appsec", "provenance"],
+                    "artifacts": {"brief": "brief.md"},
+                    "artifact_dir": "Wq6yMdt11LM",
+                },
+                {
+                    "video_id": "LdQpoK2TzSo",
+                    "title": "Introducing Managed Deep Agents",
+                    "category": "managed deep agents",
+                    "tags": ["deep-agents"],
+                    "relevance_lanes": ["hermes-evy"],
+                    "artifacts": {"brief": "brief.md"},
+                    "artifact_dir": "LdQpoK2TzSo",
+                },
+            ]
+            (root / "_index.json").write_text(video_research.json.dumps({"videos": videos}), encoding="utf-8")
+            digest_path = video_research.write_morning_brief_sources(root)
+            digest = digest_path.read_text()
+            self.assertIn("# Video Research Sources for Evy's Morning AI Brief", digest)
+            self.assertIn("package supply-chain hardening", digest)
+            self.assertIn("keelpin-appsec", digest)
+            self.assertIn("Wq6yMdt11LM/brief.md", digest)
+
     def test_write_artifacts_emits_metadata_json_with_category_and_tags(self):
         result = video_research.TranscriptResult(
             video_id="qeM-vMakFQ8",
