@@ -10,7 +10,7 @@ Give this README to your AI agent. It explains how to install and use this CLI.
 - optionally fall back to downloading audio and transcribing locally with `faster-whisper`;
 - write a timestamped transcript;
 - write metadata JSON;
-- write a first-pass research brief specialized for known agent-research categories: NVIDIA/hardware-harness talks, agent auth/auth.md, agent lifecycle/LangSmith, future agent architecture, open-model evaluation, local AI workspaces, dynamic agent workflows, and AI-era judgment/evidence.
+- write a first-pass research brief specialized for known agent-research categories: NVIDIA/hardware-harness talks, agent auth/auth.md, agent lifecycle/LangSmith, future agent architecture, open-model evaluation, local AI workspaces, dynamic agent workflows, AI-era judgment/evidence, interpretable context methodology, IDE-native coding harnesses, and desktop personal agents.
 
 This is designed for Jason/Evy research ingestion: give Evy a video URL, get the source material and a brief quickly, then refine the brief with LLM analysis.
 

@@ -208,6 +208,80 @@ class VideoResearchTests(unittest.TestCase):
         self.assertIn("risk", brief.lower())
         self.assertIn("Keelpin", brief)
 
+    def test_build_brief_switches_to_interpretable_context_methodology_when_folders_markdown_detected(self):
+        transcript = """
+0:00 Interpretable context methodology.
+0:19 they're building folders and markdown files on their computer.
+0:44 methodology is about structuring folders, structuring markdown files.
+1:01 skills are the right amount of scripts, processes, and ideas.
+1:28 instead of creating rag, you give it access to normal databases and folder context structure.
+8:55 chain of decisions being made.
+12:31 track the decision-making and goal processes where and when it was saved within dialogue.
+13:08 engineering context.
+""".strip()
+        brief = video_research.build_brief(
+            transcript,
+            url="https://youtu.be/956DPSPX4wg",
+            title="You're Automating The Wrong Layer (How 30,000 People Build AI Without Frameworks)",
+            video_id="956DPSPX4wg",
+        )
+        self.assertIn("interpretable context methodology", brief.lower())
+        self.assertIn("folders", brief.lower())
+        self.assertIn("markdown", brief.lower())
+        self.assertIn("dialogue", brief.lower())
+        self.assertIn("Keelpin", brief)
+
+    def test_build_brief_switches_to_ide_native_coding_harness_when_oh_my_pi_detected(self):
+        transcript = """
+0:00 This is Oh My Pi. It's a new AI agent harness built on top of the popular Pi framework.
+0:58 native LSP or language server protocol integration.
+1:31 full debugger adapter protocol support.
+1:45 debugger tools like DLV or debugpy.
+1:59 completely model agnostic.
+2:26 hash line edits.
+2:49 whitespace syntax errors and save up to 61% on LLM token usage.
+3:06 its own browser tool.
+4:14 PR review tool, sub agents, PDFs, hindsight for agent memory management.
+""".strip()
+        brief = video_research.build_brief(
+            transcript,
+            url="https://youtu.be/8ukl-0tlVgM",
+            title="Stop Using Claude Code CLI. Use THIS Instead! (Oh-My-Pi)",
+            video_id="8ukl-0tlVgM",
+        )
+        self.assertIn("ide-native coding harness", brief.lower())
+        self.assertIn("lsp", brief.lower())
+        self.assertIn("debugger", brief.lower())
+        self.assertIn("hash line edits", brief.lower())
+        self.assertIn("Keelpin", brief)
+
+    def test_build_brief_switches_to_desktop_personal_agent_when_openhuman_detected(self):
+        transcript = """
+0:00 brand new AI agent called OpenHuman.
+0:11 desktop application just like Slack, just like Notion.
+0:35 meeting agent can attend a meeting on your behalf and speak in real time.
+2:25 personal AI super intelligence with local memory.
+3:27 memory of your data lives locally on your machine.
+3:52 integrations, 118 plus integrations out of the box.
+10:40 control your browser, can control your computer.
+10:49 writes code, edits files, runs commands.
+11:30 crone system built in.
+12:33 subconscious loop wakes itself every 5 minutes.
+13:14 activity log to see exactly what the agent did while you were away.
+13:51 same skill.md format.
+""".strip()
+        brief = video_research.build_brief(
+            transcript,
+            url="https://youtu.be/4xDTGazlYHM",
+            title="I am Switching to OpenHuman...",
+            video_id="4xDTGazlYHM",
+        )
+        self.assertIn("desktop personal agent", brief.lower())
+        self.assertIn("local memory", brief.lower())
+        self.assertIn("subconscious loop", brief.lower())
+        self.assertIn("meeting agent", brief.lower())
+        self.assertIn("Hermes/Evy", brief)
+
     def test_resolve_output_dir_uses_video_id_under_out_root_for_batch_runs(self):
         out_dir = video_research.resolve_output_dir(
             video_id="R9K2574YEAg",

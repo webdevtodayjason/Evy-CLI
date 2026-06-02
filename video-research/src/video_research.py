@@ -231,7 +231,6 @@ def _is_dynamic_workflows_talk(transcript: str, title: str) -> bool:
         "giant parallel job",
     ])
 
-
 def _is_ai_judgment_evidence_talk(transcript: str, title: str) -> bool:
     haystack = f"{title}\n{transcript}".lower()
     return any(marker in haystack for marker in [
@@ -241,6 +240,43 @@ def _is_ai_judgment_evidence_talk(transcript: str, title: str) -> bool:
         "age of whiteboards",
         "situation, decision, risk, and change",
         "comprehension over generation",
+    ])
+
+
+def _is_interpretable_context_methodology_talk(transcript: str, title: str) -> bool:
+    haystack = f"{title}\n{transcript}".lower()
+    return any(marker in haystack for marker in [
+        "interpretable context methodology",
+        "automating the wrong layer",
+        "folders and markdown files",
+        "structuring folders",
+        "folder context structure",
+        "chain of decisions",
+    ])
+
+
+def _is_ide_native_coding_harness_talk(transcript: str, title: str) -> bool:
+    haystack = f"{title}\n{transcript}".lower()
+    return any(marker in haystack for marker in [
+        "oh my pi",
+        "oh-my-pi",
+        "native lsp",
+        "language server protocol",
+        "debugger adapter protocol",
+        "hash line edits",
+    ])
+
+
+def _is_desktop_personal_agent_talk(transcript: str, title: str) -> bool:
+    haystack = f"{title}\n{transcript}".lower()
+    return any(marker in haystack for marker in [
+        "openhuman",
+        "open human",
+        "personal ai super intelligence",
+        "desktop application just like slack",
+        "meeting agent",
+        "subconscious loop",
+        "118 plus integrations",
     ])
 
 
@@ -557,6 +593,138 @@ This is a judgment evidence brief: as AI makes polished output cheap, the scarce
 - How can Keelpin represent rejected alternatives and accepted risk as graph edges?
 - Could generated briefs include a Situation/Decision/Risk/Change section by default for strategic videos?
 - What human review signals should be attached to AI-generated code or reports?
+"""
+
+    if _is_interpretable_context_methodology_talk(transcript, title):
+        structure_lines = _select_lines(transcript, ["folders", "markdown", "plain text", "skills", "scripts", "processes"])
+        layer_lines = _select_lines(transcript, ["layer one", "layer two", "level three", "workflow", "context window", "determinism"])
+        dialogue_lines = _select_lines(transcript, ["dialogue", "conversation", "chain of decisions", "goals", "constraints", "assumptions"])
+        provenance_lines = _select_lines(transcript, ["training data", "markdown files", "methodology", "saved", "track", "engineering context"])
+        return f"""# Research Brief — {title}
+
+Source: {url}
+Video ID: {video_id}
+
+## One-line thesis
+This is an interpretable context methodology brief: instead of automating the framework layer, the talk argues for engineering plain-text folders, markdown, skills, dialogue, goals, constraints, and decision traces so one agent can navigate reusable context without heavyweight infrastructure.
+
+## Why this matters for Jason
+- Hermes/Evy already lives in this pattern: skills, markdown, transcripts, memories, plans, and artifacts become the context substrate the agent can navigate.
+- For Keelpin, the crucial signal is not just generated code; it is the dialogue-to-decision chain that produced constraints, assumptions, rejected paths, and methodology.
+- This is a strong argument for provenance-first folders: research notes, scripts, audio, briefs, and decisions should be structured so future agents can reuse them with minimal context injection.
+- The “don’t automate the wrong layer” warning maps to AppSec too: build the auditable substrate before piling on opaque multi-agent frameworks.
+
+## Key evidence — folders / markdown / skills substrate
+{bullets(structure_lines)}
+
+## Key evidence — layer model / context engineering
+{bullets(layer_lines)}
+
+## Key evidence — dialogue as decision trace
+{bullets(dialogue_lines)}
+
+## Key evidence — reusable methodology / provenance
+{bullets(provenance_lines)}
+
+## Research implications
+1. Treat context folders and markdown files as first-class software artifacts: versioned, linted, reviewed, and tied to outcomes.
+2. Capture dialogue-derived goals, constraints, assumptions, and decisions as provenance edges that Keelpin can reason about.
+3. Prefer simple navigable context structures before adding complex agent frameworks or RAG layers.
+4. Add lightweight decision extraction to Evy research workflows so a conversation can become durable methodology.
+
+## Follow-up questions
+- Should Evy-CLI include a command that extracts goals/constraints/decisions from transcripts into markdown context files?
+- How should Keelpin represent dialogue-derived constraints alongside code/property graphs?
+- Which Hermes folders should become canonical context libraries for future research runs?
+- Can the video-research workflow emit a decision-trace artifact in addition to a brief?
+"""
+
+    if _is_ide_native_coding_harness_talk(transcript, title):
+        lsp_lines = _select_lines(transcript, ["LSP", "language server", "workspace-level", "structural refactor", "imports", "re-exports"])
+        debugger_lines = _select_lines(transcript, ["debugger", "debugpy", "DLV", "breakpoints", "live memory", "stack frames"])
+        edit_lines = _select_lines(transcript, ["hash line edits", "content hash", "whitespace", "syntax errors", "token usage"])
+        tool_lines = _select_lines(transcript, ["browser tool", "PR review", "sub agents", "PDFs", "hindsight", "memory management"])
+        return f"""# Research Brief — {title}
+
+Source: {url}
+Video ID: {video_id}
+
+## One-line thesis
+This is an IDE-native coding harness brief: Oh-My-Pi is positioned as an agent harness that treats a project like a live application runtime, using LSP, debugger adapters, hash-anchored edits, browser tooling, PR review, subagents, and memory rather than flat-text guessing.
+
+## Why this matters for Jason
+- For Hermes/Evy, this validates adding richer coding-tool context: LSP, DAP/debugpy, browser automation, PR review, and memory as first-class harness capabilities.
+- For Keelpin, IDE/runtime-aware edits are AppSec-relevant: structural refactors, import rewrites, live stack state, and exact edit anchors should be traceable.
+- Hash line edits are an interesting provenance primitive: smaller edits, fewer token costs, and fewer whitespace/syntax failures, with clearer anchors for review.
+- The harness direction is “agent + IDE/runtime substrate,” not merely “LLM reading files.”
+
+## Key evidence — LSP / structural code awareness
+{bullets(lsp_lines)}
+
+## Key evidence — debugger/runtime awareness
+{bullets(debugger_lines)}
+
+## Key evidence — hash line edits / safe patching
+{bullets(edit_lines)}
+
+## Key evidence — browser, review, subagents, memory
+{bullets(tool_lines)}
+
+## Research implications
+1. Explore LSP/DAP integration for Evy-CLI or Hermes coding workflows so agents can inspect symbols, imports, and live runtime state.
+2. Treat content-hash edit anchors as a safer patch model for agent-generated changes and Keelpin provenance.
+3. Log debugger sessions and runtime observations as security-relevant evidence, not just development convenience.
+4. Compare Oh-My-Pi’s harness features against Hermes/Codex/Claude Code to identify missing tooling lanes.
+
+## Follow-up questions
+- Should Hermes expose debugpy/DAP as a first-class tool for coding agents?
+- Can Keelpin validate hash-anchored edits against AST/CPG changes?
+- What is the minimum trace schema for LSP refactor → patch → test → PR review?
+- Which coding jobs need runtime debugger access versus static code inspection only?
+"""
+
+    if _is_desktop_personal_agent_talk(transcript, title):
+        install_lines = _select_lines(transcript, ["desktop application", "download", "applications folder", "local install", "cloud deploy", "terminal"])
+        memory_lines = _select_lines(transcript, ["local memory", "data lives locally", "managed", "backend", "API keys", "custom"])
+        action_lines = _select_lines(transcript, ["meeting agent", "control your browser", "control your computer", "runs commands", "writes code", "edits your files"])
+        autonomy_lines = _select_lines(transcript, ["crone system", "integrations", "triggers", "gatekeeper", "subconscious loop", "activity log", "approval"])
+        return f"""# Research Brief — {title}
+
+Source: {url}
+Video ID: {video_id}
+
+## One-line thesis
+This is a desktop personal agent brief: OpenHuman packages a consumer-installable desktop AI harness with local memory, hosted/custom backend options, meeting participation, browser/computer control, integrations, triggers, cron-like scheduling, skills, and an auditable subconscious loop.
+
+## Why this matters for Jason
+- OpenHuman is a direct comparison point for Hermes/Evy’s product shape: local memory, desktop presence, voice/meeting capability, integrations, background routines, and visible activity logs.
+- The local-memory plus managed-backend split is strategically important: it trades privacy/control against ease of use and integration scale.
+- For Keelpin, desktop agents create high-risk action surfaces: accessibility/mouse control, microphone, browser control, file edits, commands, OAuth integrations, triggers, and scheduled autonomy.
+- For Hermes/Evy, the useful pattern is human-in-the-loop autonomy: read-only background work can run quietly, write/action workflows should request approval and preserve an activity log.
+
+## Key evidence — desktop install / accessibility
+{bullets(install_lines)}
+
+## Key evidence — local memory / backend split
+{bullets(memory_lines)}
+
+## Key evidence — agent actions / meeting agent
+{bullets(action_lines)}
+
+## Key evidence — triggers / subconscious loop / audit
+{bullets(autonomy_lines)}
+
+## Research implications
+1. Add OpenHuman to the competitive/reference map for Evy: desktop body, local memory, integrations, approvals, and activity log.
+2. Model desktop-agent permissions as AppSec artifacts: accessibility, microphone, browser automation, OAuth scopes, commands, file edits, and scheduled jobs.
+3. Keep Evy’s background autonomy explicit: wake cadence, skip/act/escalate decisions, approval boundaries, and visible audit trails.
+4. Consider “meeting agent” as a future Evy capability, but only with clear disclosure, transcript provenance, and speaking permissions.
+
+## Follow-up questions
+- Which OpenHuman patterns should Evy adopt: activity log, trigger gatekeeper, subconscious loop, or meeting agent?
+- How should Keelpin score desktop-agent risk across OS permissions, OAuth scopes, and automation commands?
+- What Evy actions may run read-only without approval, and what must always escalate to Jason?
+- Should Evy’s cron/heartbeat routines expose a user-facing activity log similar to OpenHuman?
 """
 
     agent_lines = _select_lines(transcript, ["agent", "harness", "tool", "orchestration", "memory", "storage"])
