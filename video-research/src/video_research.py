@@ -177,6 +177,16 @@ def _is_agent_auth_talk(transcript: str, title: str) -> bool:
     return any(marker in haystack for marker in ["auth.md", "auth dot m d", "idjag", "agentic registration"])
 
 
+def _is_agent_lifecycle_talk(transcript: str, title: str) -> bool:
+    haystack = f"{title}\n{transcript}".lower()
+    return any(marker in haystack for marker in [
+        "agent development lifecycle",
+        "langsmith engine",
+        "smithdb",
+        "build, test, deploy, monitor",
+    ])
+
+
 def build_brief(transcript: str, url: str, title: str, video_id: str) -> str:
     def bullets(lines: list[str]) -> str:
         if not lines:
@@ -225,6 +235,51 @@ This talk argues that autonomous agents need agent-native registration: a discov
 - What minimum scopes should an autonomous coding agent receive for deploy, CI, logs, databases, and issue trackers?
 - Should Evy-CLI tools publish llms.txt/auth.md-style manifests for agent discovery?
 - How does auth.md compare with OAuth device flow, OIDC federation, SPIFFE/SPIRE, and MCP auth?
+"""
+
+    if _is_agent_lifecycle_talk(transcript, title):
+        build_lines = _select_lines(transcript, ["build", "agent harness", "execution environment", "deep agents", "tools"])
+        test_lines = _select_lines(transcript, ["test phase", "datasets", "metrics", "evaluations", "regressing"])
+        deploy_lines = _select_lines(transcript, ["production", "durably", "sandboxes", "auth proxy", "deploy"])
+        monitor_lines = _select_lines(transcript, ["traces", "observability", "SmithDB", "Langsmith Engine", "monitor"])
+        return f"""# Research Brief — {title}
+
+Source: {url}
+Video ID: {video_id}
+
+## One-line thesis
+This talk frames reliable agents as an Agent Development Lifecycle: Build → Test → Deploy → Monitor, with traces at the center and governance/repair loops layered on top.
+
+## Why this matters for Jason
+- For Hermes/Evy, this is a concrete operating model for building, validating, deploying, monitoring, and improving agent workflows.
+- For Keelpin, agent traces, tool calls, code changes, credentials, eval failures, and deployment events become AppSec/provenance artifacts.
+- For infrastructure, SmithDB's object-storage-backed trace architecture is a useful model for durable, searchable agent memory and observability at scale.
+- For product design, agents increasingly become users of the observability tools themselves, so fast trace query is agent UX as well as human UX.
+
+## Key evidence — build
+{bullets(build_lines)}
+
+## Key evidence — test/evaluate
+{bullets(test_lines)}
+
+## Key evidence — deploy/sandbox/govern
+{bullets(deploy_lines)}
+
+## Key evidence — monitor/traces/repair
+{bullets(monitor_lines)}
+
+## Research implications
+1. Treat traces as the behavioral record of agent execution: inputs, decisions, tools, outputs, and failures.
+2. Map trace spans into Keelpin-style provenance graphs: tool call → file write → dependency change → test result → PR/deploy event.
+3. Keep credentials outside sandboxes when possible; use proxy/delegation patterns to reduce prompt-injection leakage risk.
+4. Build eval datasets from observed production failures so fixes become regression tests instead of one-off prompt tweaks.
+5. Consider an Evy Engine-style watchdog that scans failed runs, stale skills, cron stalls, and trace anomalies.
+
+## Follow-up questions
+- What Hermes trace schema should capture tool inputs/outputs, artifact paths, verification status, and user-visible results?
+- How should Keelpin index agent traces alongside code/property graphs?
+- Which failures should become eval dataset rows versus code changes versus skill/context changes?
+- Can Evy's Nook/Railway S3 pattern support durable trace/artifact storage for this lifecycle?
 """
 
     agent_lines = _select_lines(transcript, ["agent", "harness", "tool", "orchestration", "memory", "storage"])

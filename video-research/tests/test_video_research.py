@@ -69,6 +69,29 @@ class VideoResearchTests(unittest.TestCase):
         self.assertIn("agent-ready is the next enterprise-ready", brief.lower())
         self.assertIn("Keelpin", brief)
 
+    def test_build_brief_switches_to_agent_lifecycle_when_langsmith_detected(self):
+        transcript = """
+3:58 they've landed on this new agent development lifecycle.
+4:55 first, I want to talk about build, building agents.
+12:40 I want to talk about the test phase next.
+13:37 So you've built your agent. Now you want to go to production.
+18:42 And lastly, we've got monitor.
+24:05 agent traces are at the center of the agent development lifecycle.
+27:56 today, we're launching SmithDB.
+40:59 launch an agent in Langsmith, an ambient proactive action-taking agent called Langsmith Engine.
+""".strip()
+        brief = video_research.build_brief(
+            transcript,
+            url="https://youtu.be/jWy39wavbjY",
+            title="The Agent Development Lifecycle: Build, Test, Deploy, Monitor",
+            video_id="jWy39wavbjY",
+        )
+        self.assertIn("Agent Development Lifecycle", brief)
+        self.assertIn("Build → Test → Deploy → Monitor", brief)
+        self.assertIn("SmithDB", brief)
+        self.assertIn("traces", brief.lower())
+        self.assertIn("Keelpin", brief)
+
 
 if __name__ == "__main__":
     unittest.main()
